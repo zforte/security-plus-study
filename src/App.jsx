@@ -67,6 +67,7 @@ function QuizCard({ q, index, total, onNext, onPrev, onAnswered, alreadyAnswered
 
   const domain = categorizeTopic(q.text, q.options);
   const domainColor = DOMAIN_COLORS[domain] || "#6b7280";
+  const hasExplanation = q.explanation && q.explanation !== "N/A";
 
   const toggleSelect = (letter) => {
     if (revealed) return;
@@ -84,30 +85,23 @@ function QuizCard({ q, index, total, onNext, onPrev, onAnswered, alreadyAnswered
     const isCorrect = selectedArr === correctArr && selected.size > 0;
     const isWrong = selected.size > 0 && selectedArr !== correctArr;
     setRevealed(true);
-    if (alreadyAnswered === undefined) {
-      onAnswered(q.num, isCorrect, isWrong);
-    }
+    if (alreadyAnswered === undefined) onAnswered(q.num, isCorrect, isWrong);
   };
 
   const selectedArr = Array.from(selected).sort().join("");
   const correctArr = q.correct.split("").sort().join("");
 
-  // Determine display state
   let resultState = null;
   if (revealed) {
-    if (alreadyAnswered !== undefined) {
-      resultState = alreadyAnswered; // "correct", "wrong", or "skipped"
-    } else if (selected.size === 0) {
-      resultState = "skipped";
-    } else if (selectedArr === correctArr) {
-      resultState = "correct";
-    } else {
-      resultState = "wrong";
-    }
+    if (alreadyAnswered !== undefined) resultState = alreadyAnswered;
+    else if (selected.size === 0) resultState = "skipped";
+    else if (selectedArr === correctArr) resultState = "correct";
+    else resultState = "wrong";
   }
 
   return (
     <div style={{ maxWidth: 720, margin: "0 auto", fontFamily: "system-ui, sans-serif", padding: "0 16px 40px" }}>
+      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "16px 0", borderBottom: "1px solid #e5e7eb", marginBottom: 20 }}>
         <div>
           <span style={{ fontWeight: 700, fontSize: 18, color: "#1f2937" }}>Security+ SY0-701</span>
@@ -116,6 +110,7 @@ function QuizCard({ q, index, total, onNext, onPrev, onAnswered, alreadyAnswered
         <span style={{ fontSize: 14, color: "#6b7280" }}>Q {index + 1} / {total}</span>
       </div>
 
+      {/* Badges */}
       <div style={{ display: "flex", gap: 8, marginBottom: 14, flexWrap: "wrap" }}>
         <span style={{ background: domainColor + "18", color: domainColor, border: "1px solid " + domainColor + "40", borderRadius: 20, padding: "3px 12px", fontSize: 12, fontWeight: 600 }}>{domain}</span>
         <span style={{ background: "#f3f4f6", color: "#6b7280", borderRadius: 20, padding: "3px 12px", fontSize: 12 }}>Q#{q.num}</span>
@@ -129,10 +124,12 @@ function QuizCard({ q, index, total, onNext, onPrev, onAnswered, alreadyAnswered
         )}
       </div>
 
+      {/* Question text */}
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "20px 22px", marginBottom: 16, lineHeight: 1.6, fontSize: 16, color: "#1f2937", whiteSpace: "pre-wrap" }}>
         {q.text}
       </div>
 
+      {/* Result banners */}
       {resultState === "correct" && (
         <div style={{ background: "#f0fdf4", border: "1px solid #86efac", borderRadius: 10, padding: "12px 16px", marginBottom: 14, display: "flex", alignItems: "center", gap: 10 }}>
           <span style={{ fontSize: 18 }}>✅</span>
@@ -156,6 +153,7 @@ function QuizCard({ q, index, total, onNext, onPrev, onAnswered, alreadyAnswered
         </div>
       )}
 
+      {/* Options */}
       <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
         {q.options.map(function(opt) {
           const letter = opt[0], text = opt[1];
@@ -184,6 +182,7 @@ function QuizCard({ q, index, total, onNext, onPrev, onAnswered, alreadyAnswered
         })}
       </div>
 
+      {/* Check Answer button */}
       {!revealed && (
         <button onClick={handleReveal}
           style={{ width: "100%", padding: "14px", background: "#1f2937", color: "#fff", border: "none", borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: "pointer", marginBottom: 16 }}>
@@ -191,6 +190,23 @@ function QuizCard({ q, index, total, onNext, onPrev, onAnswered, alreadyAnswered
         </button>
       )}
 
+      {/* Explanation box — shown after reveal */}
+      {revealed && (
+        <div style={{ background: "#f8fafc", border: "1px solid #e2e8f0", borderRadius: 12, padding: "18px 20px", marginBottom: 20 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: hasExplanation ? 10 : 0 }}>
+            <span style={{ fontSize: 16 }}>💡</span>
+            <span style={{ fontWeight: 700, fontSize: 14, color: "#475569" }}>Explanation</span>
+            {!hasExplanation && <span style={{ fontSize: 13, color: "#94a3b8", marginLeft: 4 }}>— not provided for this question</span>}
+          </div>
+          {hasExplanation && (
+            <div style={{ fontSize: 14, lineHeight: 1.8, color: "#374151", whiteSpace: "pre-wrap" }}>
+              {q.explanation}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Navigation */}
       <div style={{ display: "flex", gap: 12 }}>
         <button onClick={onPrev} disabled={index === 0}
           style={{ flex: 1, padding: "12px", background: index === 0 ? "#f3f4f6" : "#fff", color: index === 0 ? "#9ca3af" : "#374151", border: "1px solid #d1d5db", borderRadius: 10, fontSize: 15, fontWeight: 600, cursor: index === 0 ? "not-allowed" : "pointer" }}>
@@ -238,9 +254,7 @@ export default function App() {
   const [searchQ, setSearchQ] = useState("");
   const [jumpInput, setJumpInput] = useState("");
   const [isShuffled, setIsShuffled] = useState(false);
-  const [mode, setMode] = useState("all"); // "all" | "wrong"
-
-  // score: { [questionNum]: "correct" | "wrong" | "skipped" }
+  const [mode, setMode] = useState("all");
   const [scores, setScores] = useState({});
   const [showWrongModal, setShowWrongModal] = useState(false);
 
@@ -257,29 +271,16 @@ export default function App() {
     return matchesDomain && matchesSearch;
   });
 
-  // Apply shuffle or original order
   const displayQueue = isShuffled ? queue.filter(q => filtered.find(f => f.num === q.num)) : filtered;
-
   const safeIndex = Math.min(index, Math.max(0, displayQueue.length - 1));
   const current = displayQueue[safeIndex];
 
   const handleAnswered = useCallback((num, isCorrect, isWrong) => {
-    setScores(prev => ({
-      ...prev,
-      [num]: isCorrect ? "correct" : isWrong ? "wrong" : "skipped"
-    }));
+    setScores(prev => ({ ...prev, [num]: isCorrect ? "correct" : isWrong ? "wrong" : "skipped" }));
   }, []);
 
-  const handleShuffle = () => {
-    setQueue(shuffle(filtered));
-    setIsShuffled(true);
-    setIndex(0);
-  };
-
-  const handleUnshuffle = () => {
-    setIsShuffled(false);
-    setIndex(0);
-  };
+  const handleShuffle = () => { setQueue(shuffle(filtered)); setIsShuffled(true); setIndex(0); };
+  const handleUnshuffle = () => { setIsShuffled(false); setIndex(0); };
 
   const handleRetryWrong = () => {
     const wrongOnes = QUESTIONS.filter(q => scores[q.num] === "wrong");
@@ -323,39 +324,27 @@ export default function App() {
   return (
     <div style={{ background: "#f9fafb", minHeight: "100vh", paddingTop: 20 }}>
       {showWrongModal && (
-        <WrongAnswersModal
-          wrongNums={wrongNums}
-          onClose={() => setShowWrongModal(false)}
-          onRetry={handleRetryWrong}
-        />
+        <WrongAnswersModal wrongNums={wrongNums} onClose={() => setShowWrongModal(false)} onRetry={handleRetryWrong} />
       )}
 
       <div style={{ maxWidth: 720, margin: "0 auto", padding: "0 16px 16px" }}>
+        <ScoreBar correct={correctCount} incorrect={wrongCount} answered={answeredCount} total={displayQueue.length} />
 
-        {/* Score bar */}
-        <ScoreBar
-          correct={correctCount}
-          incorrect={wrongCount}
-          answered={answeredCount}
-          total={displayQueue.length}
-        />
-
-        {/* Action buttons */}
         <div style={{ display: "flex", gap: 8, marginBottom: 12, flexWrap: "wrap" }}>
           {!isShuffled ? (
             <button onClick={handleShuffle}
-              style={{ padding: "7px 14px", background: "#fff", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#374151", display: "flex", alignItems: "center", gap: 6 }}>
+              style={{ padding: "7px 14px", background: "#fff", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#374151" }}>
               🔀 Shuffle
             </button>
           ) : (
             <button onClick={handleUnshuffle}
-              style={{ padding: "7px 14px", background: "#1f2937", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#fff", display: "flex", alignItems: "center", gap: 6 }}>
+              style={{ padding: "7px 14px", background: "#1f2937", border: "none", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#fff" }}>
               🔀 Shuffled — Reset Order
             </button>
           )}
           {wrongCount > 0 && (
             <button onClick={() => setShowWrongModal(true)}
-              style={{ padding: "7px 14px", background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#7f1d1d", display: "flex", alignItems: "center", gap: 6 }}>
+              style={{ padding: "7px 14px", background: "#fee2e2", border: "1px solid #fca5a5", borderRadius: 8, fontSize: 13, fontWeight: 600, cursor: "pointer", color: "#7f1d1d" }}>
               ⚠️ Missed ({wrongCount})
             </button>
           )}
@@ -373,12 +362,10 @@ export default function App() {
           )}
         </div>
 
-        {/* Search */}
         <input type="text" placeholder="Search questions..." value={searchQ}
           onChange={e => { setSearchQ(e.target.value); setIndex(0); }}
           style={{ width: "100%", padding: "10px 14px", border: "1px solid #d1d5db", borderRadius: 8, fontSize: 14, marginBottom: 10, boxSizing: "border-box", outline: "none" }} />
 
-        {/* Domain filters */}
         <div style={{ display: "flex", gap: 6, flexWrap: "wrap", marginBottom: 6 }}>
           {domains.map(d => (
             <button key={d} onClick={() => { setFilterDomain(d); setIndex(0); }}
@@ -395,7 +382,6 @@ export default function App() {
           {isShuffled ? " — shuffled" : ""}
         </div>
 
-        {/* Jump */}
         <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
           <input type="number" placeholder="Jump to #" value={jumpInput}
             onChange={e => setJumpInput(e.target.value)}
