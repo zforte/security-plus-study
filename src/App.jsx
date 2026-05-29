@@ -156,6 +156,15 @@ function QuizCard({ q, index, total, onNext, onPrev, onAnswered, alreadyAnswered
 
       <div style={{ background: "#fff", border: "1px solid #e5e7eb", borderRadius: 12, padding: "20px 22px", marginBottom: 16, lineHeight: 1.7, fontSize: 16, color: "#1f2937" }}>
         {q.text}
+        {q.image && (
+          <div style={{ marginTop: 16 }}>
+            <img
+              src={"/question-images/" + q.image}
+              alt={"Figure for question " + q.num}
+              style={{ maxWidth: "100%", height: "auto", borderRadius: 8, border: "1px solid #e5e7eb", display: "block" }}
+            />
+          </div>
+        )}
       </div>
 
       {resultState === "correct" && (
